@@ -1,8 +1,7 @@
-
 ---
 name: checkpoint
 description: Pre-compaction checkpoint — curates decisions, state, and open questions into a resumable markdown file before context fills up
-argument-hint: [docs-dir] (optional, defaults to docs/session-notes)
+argument-hint: '[docs-dir] (optional, defaults to docs/session-notes)'
 allowed-tools: Bash(date:*) Read Write Edit Glob Grep
 disable-model-invocation: true
 ---

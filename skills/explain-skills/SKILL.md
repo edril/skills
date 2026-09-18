@@ -1,7 +1,7 @@
 ---
 name: explain-skills
 description: Explains what your custom skills and commands do and when to use them, selectively by name. For the full up-to-date list of everything currently loaded, points to the built-in /skills command instead.
-argument-hint: [skill-or-command-name ...] (optional; omit for guidance, or "all" for every custom one)
+argument-hint: '[skill-or-command-name ...] (optional; omit for guidance, or "all" for every custom one)'
 allowed-tools: Glob Read
 ---
 

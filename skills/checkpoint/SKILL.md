@@ -1,6 +1,6 @@
 ---
 name: checkpoint
-description: Pre-compaction checkpoint — curates decisions, state, and open questions into a resumable markdown file before context fills up
+description: Pre-compaction checkpoint — curates decisions, state, and open questions into a resumable markdown file before context fills up, then advises compact-vs-fresh-resume
 argument-hint: '[docs-dir] (optional, defaults to docs/session-notes)'
 allowed-tools: Bash(date:*) Read Write Edit Glob Grep
 disable-model-invocation: true
@@ -59,3 +59,12 @@ Once confirmed: `Write` for a new file, `Edit` to merge into an existing one.
 
 ## Step 5 — Suggest a session rename
 Propose a title in the form `<repo(s)>: <task>` (e.g. `cloudtrail-validator, sigma-rules: sigma→kql pipeline`), under ~60 characters. Present it as a suggestion only — there's no confirmed tool for renaming the session itself, so don't attempt it automatically.
+
+## Step 6 — Compact or fresh resume?
+There's no tool available to read actual context usage — don't state or imply a percentage. Instead:
+
+1. Give a rough, explicitly-labeled-as-approximate proxy: how many tool calls / distinct files touched since the last checkpoint (or since the start, if this is the first one this session), and whether this is a first checkpoint or a repeat. Say plainly this is a proxy, not a measurement, and that the number in Antigravity's own context indicator is the one to actually trust if it disagrees.
+2. Recommend one of the two, based on what's actually next:
+   - **Continue in this session, leaner** — if what's left is more back-and-forth on the same task → suggest running `/compact` yourself (it can't be triggered from here)
+   - **Start fresh** — if what's left is a distinct next phase, this session's been running long, or this is a repeat checkpoint → suggest closing this session and opening a new one, then telling it to resume from this file: `Read <checkpoint-filepath> and resume from there`
+3. State whichever exact step applies, and stop — don't do either one, just hand over the instruction.

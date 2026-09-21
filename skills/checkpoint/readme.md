@@ -12,6 +12,7 @@
 1. Checks whether this session already has a checkpoint file (matched by session ID) — updates it if so, starts a new one named `<date>_<slug>.md` if not
 2. Shows the full proposed content and waits for your confirmation or edits before writing anything
 3. Writes the file once confirmed
-4. Suggests a short session-rename title (repo(s) + task) — you apply it yourself, this isn't automated
+4. Suggests a short session-rename title (repo(s) + task) — refreshed every time you run it, including in the saved file on later checkpoints, so it stays current as the task evolves. You apply it yourself; there's no confirmed tool to do the rename itself
+5. Advises compact-or-fresh-resume: a rough proxy (tool calls/files touched, first vs. repeat checkpoint), clearly labeled as approximate since Claude Code doesn't expose real context usage to a skill, plus a real recommendation and the exact command either way — `/compact` yourself to continue leaner, or open a new session and say `Read <file> and resume from there` for a genuinely clean slate
 
 **Where it lives:** `~/.claude/skills/checkpoint/SKILL.md` (personal scope — works the same in any project)

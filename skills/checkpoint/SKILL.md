@@ -50,7 +50,7 @@ Suggested session name: <see Step 5>
 - <date/time> — <one-line summary of this checkpoint>
 ```
 
-If updating an existing file: rewrite "Current State" / "Key Decisions" / "Open Questions" / "Repos & Files Touched" / "Next Step" as **current snapshots** — merge, don't duplicate. Only "Changelog" is append-only: one new dated line per checkpoint.
+If updating an existing file: rewrite "Current State" / "Key Decisions" / "Open Questions" / "Repos & Files Touched" / "Next Step" **and** the "Suggested session name" line as **current snapshots** — merge, don't duplicate. Only "Changelog" is append-only: one new dated line per checkpoint.
 
 Ask for confirmation or edits. Do not write until I respond.
 

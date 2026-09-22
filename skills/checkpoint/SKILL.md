@@ -31,6 +31,12 @@ This is not a transcript and not an autocompact-style lossy summary. Extract onl
 
 Cut anything obvious from re-reading the code, or that doesn't change what happens next.
 
+Also determine, from this session so far:
+- **Rule packs active** — any `/rules <pack>` loads you can see in this session's history
+- **Skills invoked** — any custom skills (checkpoint itself, issues, whereami, adversary-check, lessons, explain-skills, etc.) called this session
+
+Work these out from the session history first. Only ask me to confirm or fill in either one if you genuinely can't determine it from what's visible — don't ask by default.
+
 ## Step 3 — Playback before writing
 Show the full proposed content:
 
@@ -38,7 +44,10 @@ Show the full proposed content:
 ---
 Session ID: ${CLAUDE_SESSION_ID}
 Started: <date first captured>
+Status: open
 Suggested session name: <see Step 5>
+Rule packs active: <list, or "none">
+Skills invoked: <list, or "none">
 ---
 
 ## Current State
@@ -50,7 +59,7 @@ Suggested session name: <see Step 5>
 - <date/time> — <one-line summary of this checkpoint>
 ```
 
-If updating an existing file: rewrite "Current State" / "Key Decisions" / "Open Questions" / "Repos & Files Touched" / "Next Step" **and** the "Suggested session name" line as **current snapshots** — merge, don't duplicate. Only "Changelog" is append-only: one new dated line per checkpoint.
+If updating an existing file: rewrite "Current State" / "Key Decisions" / "Open Questions" / "Repos & Files Touched" / "Next Step" **and** the "Suggested session name" line as **current snapshots** — merge, don't duplicate. "Rule packs active" and "Skills invoked" are cumulative — add anything newly seen to the existing list rather than replacing it. Leave "Status" exactly as it already is in the file — this skill only ever writes `open` on first creation; something else (the `sessions` skill's `close` action) is what changes it. Only "Changelog" is append-only: one new dated line per checkpoint.
 
 Ask for confirmation or edits. Do not write until I respond.
 

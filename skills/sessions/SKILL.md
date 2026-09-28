@@ -1,8 +1,8 @@
 ---
 name: sessions
 description: Query and analyze the checkpoint corpus in docs/session-notes/ — list, filter, summarize, diff, close, or run free-form pattern analysis across sessions
-argument-hint: 'list [status=open|closed|all] [repo=<name>] [pr=<num>] | show <name> | summary <name> | diff <nameA> <nameB> | close <name> | analyze <question>|skills'
-allowed-tools: Glob Read Edit
+argument-hint: 'list [key=value ...] | show <name> | summary <name> | diff <nameA> <nameB> | close <name> | index | outstanding | analyze <question>|skills'
+allowed-tools: Glob Grep Read Edit Write Bash(git:*) Bash(gh:*)
 disable-model-invocation: true
 ---
 
@@ -10,13 +10,18 @@ disable-model-invocation: true
 
 Arguments: `$ARGUMENTS`
 
-Corpus: `${CLAUDE_PROJECT_DIR}/docs/session-notes/*.md` — the files `/checkpoint` writes. This skill only reads and (for `close`) lightly edits them; it never writes a new checkpoint itself.
+Corpus: `${CLAUDE_PROJECT_DIR}/docs/session-notes/*.md` — the files `/checkpoint` writes. This skill never writes a new checkpoint itself. It reads them, edits them only for `close` and `index` (frontmatter only, after confirmation), and writes one derived file, `docs/session-notes/INDEX.md`.
 
 ## No arguments — quick list
 Same as `list status=open`.
 
-## `list [status=open|closed|all] [repo=<name>] [pr=<num>]`
-Default `status=open` if not given. Glob the corpus, read each file's frontmatter, filter by whatever was given (`repo=`/`pr=` match inside "Repos & Files Touched"), and list matches: filename, suggested session name, status, repo(s).
+## `list [key=value ...]`
+Look sessions up by any recorded metadata. Filters combine (all must match) and values match partially (a SHA prefix, a path fragment):
+`status=` · `repo=` · `branch=` · `commit=` · `pr=` · `file=` · `date=` (one day, or a range like `2026-09-01..2026-09-30`, matched against Started..Last active) · `topic=` · `skill=` · `rulepack=` · `issue=` · `resumed-from=`
+
+- With no filters, or with only other filters, search **all** statuses. Default to `status=open` only when no filters at all are given.
+- Source: `INDEX.md` if present and not stale (no session file newer than it); otherwise the files' frontmatter, with `file=` matched against "Repos & Files Touched" in the body.
+- Show: filename, suggested name, dates, status, repo(s). Keep any `(inferred)` marker visible next to inferred values.
 
 ## `show <name>`
 Fuzzy-match filename or suggested session name. Show the full file content. If more than one matches, list them and ask which.
@@ -29,6 +34,31 @@ Match each as in `show`. Read both files and report what's meaningfully differen
 
 ## `close <name>`
 Match as in `show`. Edit that file: `Status: open` → `Status: closed`. Confirm briefly.
+
+## `index` — build or refresh the session library
+Goal: one queryable overview of every session, however messy — open, closed, or missing fields. INDEX.md is **derived**: it can always be rebuilt from the files, so there's no process to keep up.
+
+1. Glob `docs/session-notes/*.md`, excluding `INDEX.md`. Read each. If there are many, work in batches and say so. On a rerun, focus on files that are new or changed since INDEX.md was last written.
+2. For each session gather: Started / Last active dates, suggested name, Topic, repo(s) with branch / commits / PRs, files touched, Issues raised, rule packs, skills, a one-line summary, what's outstanding (Next Step + Open Questions), and a **judged** status — finished, continued elsewhere, or still live — from content and from whether a later session picked up its Next Step. Don't trust the `Status` field; it may never have been updated.
+3. For fields the file already records, use them as-is. For missing ones:
+   - **Dates**: from `Started`, the filename, and the last Changelog entry.
+   - **Issues raised**: exact — grep `~/.claude/issues/` for the session's `Session ID:`.
+   - **Repos / files**: as written in the body; don't add any that aren't there.
+   - **Commits / PRs**: only if the file mentions them. Otherwise, for each repo listed that exists locally (the current directory, or a path the file mentions; skip and say so if it can't be found), try recovering by date window: `git -C <repo> log --since=<Started> --until=<Last active + 1 day> --author="$(git config user.name)" --format="%h %ad %s" --date=short`, and best-effort `gh pr list --state all --search <sha> --json number,url` (skip silently if `gh` is unavailable). Mark **every** recovered value `(inferred)` — a date window can pick up unrelated work from the same day.
+   - **Rule packs / skills**: `unknown` if not in the file. Never guess.
+   - **Topic**: propose one, reusing existing `docs/lessons/` topics where they fit; mark `(inferred)`.
+4. Propose links between sessions, each with a one-line reason: `Resumed from` (a later session picks up an earlier one's Next Step), `Duplicates` (substantially the same work), `Related`. These are judgement calls — mark low-confidence ones as such.
+5. **Playback before writing.** Show: (a) the proposed index table, (b) the proposed frontmatter additions per original file — only fields that are missing, with `(inferred)` markers, and (c) the proposed links. Let me confirm, edit, or drop each. Write nothing until I respond.
+6. On confirmation:
+   - Write `docs/session-notes/INDEX.md`: one row per session with all of the above.
+   - Edit each original's **frontmatter only**, adding missing fields in the same shape `/checkpoint` writes (`Last active`, `Topic`, `Repos:` block, `Issues raised`, `Resumed from` / `Duplicates` / `Related`, `Status`, `Rule packs active`, `Skills invoked`). Keep the `(inferred)` marker on anything inferred so it stays distinguishable from recorded fact. Never touch the body.
+
+## `outstanding` — what's still open across sessions
+1. Read `INDEX.md` if present. If any session file is newer than the index, say it may be stale and suggest `/sessions index`. If there's no index, read the session files directly.
+2. Group sessions into threads by following `Resumed from` links (a session with no links is its own thread).
+3. For each thread, take the **latest** session's Next Step and Open Questions as the outstanding items — earlier sessions in the same thread are treated as superseded.
+4. Present a scannable list, most recently active first: thread name, repo(s), last session date, outstanding items. Flag threads that look abandoned (old, no follow-up) and any items that appear to have been resolved in a later session anyway.
+5. Judge from content, not from `Status` — show `Status` alongside but don't rely on it.
 
 ## `analyze <question>`
 Free-form pattern analysis across the corpus, e.g. "which rule packs tend to show up alongside which skills" or "what repos have needed the most checkpoints."

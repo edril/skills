@@ -2,7 +2,7 @@
 name: sessions
 description: Query and analyze the checkpoint corpus in docs/session-notes/ — list, filter, summarize, diff, close, or run free-form pattern analysis across sessions
 argument-hint: 'list [key=value ...] | show <name> | summary <name> | diff <nameA> <nameB> | close <name> | index | outstanding | analyze <question>|skills'
-allowed-tools: Glob Grep Read Edit Write Bash(git:*) Bash(gh:*)
+allowed-tools: Glob Grep Read Edit Write Bash(git:*) Bash(gh:*) Bash(find:*)
 disable-model-invocation: true
 ---
 
@@ -38,7 +38,7 @@ Match as in `show`. Edit that file: `Status: open` → `Status: closed`. Confirm
 ## `index` — build or refresh the session library
 Goal: one queryable overview of every session, however messy — open, closed, or missing fields. INDEX.md is **derived**: it can always be rebuilt from the files, so there's no process to keep up.
 
-1. Glob `docs/session-notes/*.md`, excluding `INDEX.md`. Read each. If there are many, work in batches and say so. On a rerun, focus on files that are new or changed since INDEX.md was last written.
+1. Glob `docs/session-notes/*.md`, excluding `INDEX.md`. Read each. If there are many, work in batches and say so. If `INDEX.md` already exists, find what changed with `find docs/session-notes -name '*.md' ! -name INDEX.md -newer docs/session-notes/INDEX.md`. Only those files, plus any file not yet listed in `INDEX.md`, need re-reading and re-proposing; keep the existing rows for everything else. If it doesn't exist yet, index everything.
 2. For each session gather: Started / Last active dates, suggested name, Topic, repo(s) with branch / commits / PRs, files touched, Issues raised, rule packs, skills, a one-line summary, what's outstanding (Next Step + Open Questions), and a **judged** status — finished, continued elsewhere, or still live — from content and from whether a later session picked up its Next Step. Don't trust the `Status` field; it may never have been updated.
 3. For fields the file already records, use them as-is. For missing ones:
    - **Dates**: from `Started`, the filename, and the last Changelog entry.
@@ -50,11 +50,11 @@ Goal: one queryable overview of every session, however messy — open, closed, o
 4. Propose links between sessions, each with a one-line reason: `Resumed from` (a later session picks up an earlier one's Next Step), `Duplicates` (substantially the same work), `Related`. These are judgement calls — mark low-confidence ones as such.
 5. **Playback before writing.** Show: (a) the proposed index table, (b) the proposed frontmatter additions per original file — only fields that are missing, with `(inferred)` markers, and (c) the proposed links. Let me confirm, edit, or drop each. Write nothing until I respond.
 6. On confirmation:
-   - Write `docs/session-notes/INDEX.md`: one row per session with all of the above.
    - Edit each original's **frontmatter only**, adding missing fields in the same shape `/checkpoint` writes (`Last active`, `Topic`, `Repos:` block, `Issues raised`, `Resumed from` / `Duplicates` / `Related`, `Status`, `Rule packs active`, `Skills invoked`). Keep the `(inferred)` marker on anything inferred so it stays distinguishable from recorded fact. Never touch the body.
+   - Then write `docs/session-notes/INDEX.md` **last**: one row per session with all of the above. Writing it last means it ends up newer than every file it describes, which is what the change check relies on.
 
 ## `outstanding` — what's still open across sessions
-1. Read `INDEX.md` if present. If any session file is newer than the index, say it may be stale and suggest `/sessions index`. If there's no index, read the session files directly.
+1. Read `INDEX.md` if present. Check for staleness with `find docs/session-notes -name '*.md' ! -name INDEX.md -newer docs/session-notes/INDEX.md`; if anything comes back, say the index is stale, name those files, and suggest `/sessions index`. If there's no index, read the session files directly.
 2. Group sessions into threads by following `Resumed from` links (a session with no links is its own thread).
 3. For each thread, take the **latest** session's Next Step and Open Questions as the outstanding items — earlier sessions in the same thread are treated as superseded.
 4. Present a scannable list, most recently active first: thread name, repo(s), last session date, outstanding items. Flag threads that look abandoned (old, no follow-up) and any items that appear to have been resolved in a later session anyway.

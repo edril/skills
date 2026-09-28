@@ -2,7 +2,7 @@
 name: checkpoint
 description: Pre-compaction checkpoint — curates decisions, state, and open questions into a resumable markdown file before context fills up, then advises compact-vs-fresh-resume
 argument-hint: '[docs-dir] (optional, defaults to docs/session-notes)'
-allowed-tools: Bash(date:*) Read Write Edit Glob Grep
+allowed-tools: Bash(date:*) Bash(git:*) Bash(gh:*) Read Write Edit Glob Grep
 disable-model-invocation: true
 ---
 
@@ -26,16 +26,20 @@ This is not a transcript and not an autocompact-style lossy summary. Extract onl
 - **Current state** — what's built, mid-flight, or broken
 - **Key decisions** — choices made and why, especially ones expensive to re-derive
 - **Open questions** — unresolved items, explicitly flagged as pending
-- **Repos & files touched** — paths and repo names, not diffs
+- **Repos & files touched** — grouped by repo, one path per line (so lookups by file work), not diffs
 - **Immediate next step** — specific enough to act on with no other context
 
 Cut anything obvious from re-reading the code, or that doesn't change what happens next.
 
 Also determine, from this session so far:
 - **Rule packs active** — any `/rules <pack>` loads you can see in this session's history
-- **Skills invoked** — any custom skills (checkpoint itself, issues, whereami, adversary-check, lessons, explain-skills, etc.) called this session
+- **Skills invoked** — any custom skills (checkpoint itself, issues, whereami, adversary-check, lessons, sessions, explain-skills, etc.) called this session
+- **Per repo touched** — branch (`git rev-parse --abbrev-ref HEAD`), commits made this session, and PR if any (`gh pr list --head <branch> --json number,url`; skip silently if `gh` is unavailable). Run git in each repo's own directory. For commits, use the ones you actually saw made in this session and cross-check against `git log --since=<Started> --author="$(git config user.name)" --format=%h`; if they disagree, say so and ask rather than picking one.
+- **Topic** — a short tag for the area of work. Reuse an existing topic from `docs/lessons/` if one fits, otherwise propose one.
+- **Resumed from** — if this session began with a "Read <file> and resume" style prompt, the checkpoint filename it resumed from; otherwise `none`. Written once, never changed on later checkpoints.
+- **Issues raised** — issue files in `~/.claude/issues/` whose `Session ID:` line matches `${CLAUDE_SESSION_ID}` (exact match, no judgement).
 
-Work these out from the session history first. Only ask me to confirm or fill in either one if you genuinely can't determine it from what's visible — don't ask by default.
+Work these out from the session history first. Only ask me to confirm or fill in any of them if you genuinely can't determine it from what's visible — don't ask by default.
 
 ## Step 3 — Playback before writing
 Show the full proposed content:
@@ -44,8 +48,17 @@ Show the full proposed content:
 ---
 Session ID: ${CLAUDE_SESSION_ID}
 Started: <date first captured>
+Last active: <date of this checkpoint>
 Status: open
 Suggested session name: <see Step 5>
+Topic: <topic, or "unknown">
+Resumed from: <checkpoint filename, or "none">
+Repos:
+  - repo: <name>
+    branch: <branch>
+    commits: [<sha>, ...]
+    prs: [<url-or-number>, ...]
+Issues raised: [<issue filenames>, or "none"]
 Rule packs active: <list, or "none">
 Skills invoked: <list, or "none">
 ---
@@ -59,7 +72,7 @@ Skills invoked: <list, or "none">
 - <date/time> — <one-line summary of this checkpoint>
 ```
 
-If updating an existing file: rewrite "Current State" / "Key Decisions" / "Open Questions" / "Repos & Files Touched" / "Next Step" **and** the "Suggested session name" line as **current snapshots** — merge, don't duplicate. "Rule packs active" and "Skills invoked" are cumulative — add anything newly seen to the existing list rather than replacing it. Leave "Status" exactly as it already is in the file — this skill only ever writes `open` on first creation; something else (the `sessions` skill's `close` action) is what changes it. Only "Changelog" is append-only: one new dated line per checkpoint.
+If updating an existing file: rewrite "Current State" / "Key Decisions" / "Open Questions" / "Repos & Files Touched" / "Next Step" **and** the "Suggested session name" line as **current snapshots** — merge, don't duplicate. Refresh "Last active". "Commits", "PRs", "Issues raised", "Rule packs active" and "Skills invoked" are cumulative — add anything newly seen rather than replacing. Leave "Started", "Resumed from" and "Topic" exactly as they are (unless Topic is `unknown` and you can now fill it in). Leave "Status" exactly as it already is — this skill only ever writes `open` on first creation; the `sessions` skill's `close` action is what changes it. Only "Changelog" is append-only: one new dated line per checkpoint.
 
 Ask for confirmation or edits. Do not write until I respond.
 
